@@ -13,8 +13,6 @@ TITLES = ["Roasted Brussels Sprouts",
   "Smoky Buttered Brussels Sprouts",
   "Brussels Sprouts and Egg Salad with Hazelnuts"]
 
-COMMENTS = Faker::Lorem.paragraph(6)
-
 system "psql brussels_sprouts_recipes < schema.sql"
 
 def db_connection
@@ -26,61 +24,47 @@ def db_connection
   end
 end
 
-def post_recipes
+
+TITLES.each do |title|
   db_connection do |conn|
-    TITLES.each do |recipe|
-      result = conn.exec_params("INSERT INTO recipes (name) VALUES ($1);" [recipe])
-    end
+    conn.exec("INSERT INTO recipes (name) VALUES ($1);", [title])
   end
 end
 
-def post_comments
-  db_connection do |conn|
-    COMMENTS.each do |comment|
-      result = conn.exec_params("INSERT INTO comments (comment) VALUES ($1);" [comment])
-    end
-  end
+30.times do
+  db_connection { |conn| conn.exec("INSERT INTO comments (comment) VALUES ($1);", [Faker::Lorem.paragraph]) }
 end
-
-post_recipes
-post_comments
 
 # How many recipes in total?
 
-def recipe_count
-  db_connection do |conn|
-    conn.exec("SELECT * FROM recipes;").to_a
-  end
+total_recipes = []
+
+db_connection do |conn|
+  total_recipes = conn.exec("SELECT * FROM recipes;")
 end
 
-puts "There are #{recipe_count.length} recipes."
+puts "There are #{total_recipes.count} recipes."
 
 # How many comments in total?
 
-def comment_count
-  db_connection do |conn|
-    conn.exec("SELECT * FROM comments;").to_a
-  end
+total_comments = []
+
+db_connection do |conn|
+  total_comments = conn.exec("SELECT * FROM comments;")
 end
 
-puts "There are #{comment_count.length} comments."
+puts "There are #{total_comments.count} comments."
 
 # How many comments per recipe?
 
-def comments_per_recipe
-  db_connection do |conn|
-    conn.exec("SELECT recipe_id, COUNT(*) FROM comments GROUP BY recipe_id").to_a
-  end
-end
-
-comments_per_recipe
+SELECT comment FROM comments WHERE recipe_id = 1
 
 # What is the name of the recipe associated with a specific comment?
 
-def identify_recipe
-  db_connection do |conn|
-    conn.exec("SELECT recipes.id, comments.comment FROM recipes INNER JOIN comments ON comments.recipe_id=recipes.id").to_a
-  end
-end
+SELECT * FROM recipes JOIN comments ON recipes.id = comments.recipe_id
 
 # Add new recipe
+
+INSERT INTO recipes (name) VALUES ('Brussels Sprouts with Goat Cheese');
+
+INSERT INTO comments (comment, recipe_id) VALUES ('ew brussels sprouts'), ('ew goat cheese');
